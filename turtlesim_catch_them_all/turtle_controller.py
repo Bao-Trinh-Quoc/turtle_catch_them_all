@@ -1,18 +1,16 @@
 #! /usr/bin/env python3
 
 import rclpy
+import math
 from rclpy.node import Node
 from turtlesim.msg import Pose
 from geometry_msgs.msg import Twist
-import math
+from my_robot_interfaces.msg import Turtle, TurtleArray
 
 class TurtleControllerNode(Node):
     def __init__(self):
         super().__init__("turtle_controller")
-
-        self.targetX = 9.5
-        self.targetY = 10.5 
-
+        self.turtle_to_catch = None
         self.pose = None
         self.cmd_vel_publisher = self.create_publisher(
             Twist,
@@ -25,13 +23,20 @@ class TurtleControllerNode(Node):
             self.callback_turtle_pose,
             10
         )  
+        self.alive_turtles_subscriber = self.create_subscription(TurtleArray, "alive_turtles", self.callback_alive_turtles, 10)
         self.control_loop_timer_ = self.create_timer(0.01, self.control_loop)
 
     def callback_turtle_pose(self, msg):
         self.pose = msg
     
+    def callback_alive_turtles(self, msg):
+        if len(msg.turtles) > 0:
+            self.turtle_to_catch = msg.turtles[0]
+            self.targetX = self.turtle_to_catch.x
+            self.targetY = self.turtle_to_catch.y
+
     def control_loop(self):
-        if self.pose is None:
+        if self.pose is None or self.turtle_to_catch is None:
             return
         
         distX = self.targetX - self.pose.x

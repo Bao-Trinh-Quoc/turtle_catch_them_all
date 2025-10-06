@@ -5,6 +5,8 @@ from rclpy.node import Node
 from turtlesim.srv import Spawn
 import random
 import math
+from turtlesim.srv import Spawn
+from my_robot_interfaces.msg import Turtle, TurtleArray
 
 class TurtleSpawnerNode(Node):
     def __init__(self):
@@ -12,7 +14,14 @@ class TurtleSpawnerNode(Node):
         self.spawn_turtle_timer_ = self.create_timer(2.0, self.spawn_new_turtle)
         self.turtle_name_prefix =  "turtle"
         self.turtle_count = 1
+        self.alive_turtles = []
+        self.alive_turtles_publisher = self.create_publisher(TurtleArray, "alive_turtles", 10)
         self.get_logger().info("TurtleSpawnerNode has been started.")
+
+    def publish_alive_turtles(self):
+        msg = TurtleArray()
+        msg.turtles = self.alive_turtles 
+        self.alive_turtles_publisher.publish(msg)
 
     def spawn_new_turtle(self):
         self.turtle_count += 1
@@ -43,6 +52,13 @@ class TurtleSpawnerNode(Node):
             response = future.result()
             if response.name != "":
                 self.get_logger().info(f"Spawned turtle '{name}' at ({x}, {y}) with orientation {theta}")
+                new_turtle = Turtle()
+                new_turtle.name = name
+                new_turtle.x = x
+                new_turtle.y = y
+                new_turtle.theta = theta
+                self.alive_turtles.append(new_turtle)
+                self.publish_alive_turtles()
         except Exception as e:
             self.get_logger().error(f"Failed to spawn turtle '{name}': {e}")
 
