@@ -1,6 +1,6 @@
 # !/usr/bin/env python3
-from functools import partial
 
+from functools import partial
 from requests import request
 import rclpy
 from rclpy.node import Node
@@ -14,8 +14,12 @@ from my_robot_interfaces.srv import CatchTurtle
 class TurtleSpawnerNode(Node):
     def __init__(self):
         super().__init__("turtle_spawner")
-        self.spawn_turtle_timer_ = self.create_timer(1.0, self.spawn_new_turtle)
-        self.turtle_name_prefix =  "turtle"
+        self.declare_parameter("turtle_name_prefix", "turtle")
+        self.declare_parameter("spawn_frequency", 1.0)
+
+        self.spawn_turtle_timer_ = self.create_timer(self.get_parameter("spawn_frequency").value, self.spawn_new_turtle)
+        self.turtle_name_prefix =  self.get_parameter("turtle_name_prefix").value
+
         self.turtle_count = 1
         self.alive_turtles = []
         self.alive_turtles_publisher = self.create_publisher(TurtleArray, "alive_turtles", 10)
